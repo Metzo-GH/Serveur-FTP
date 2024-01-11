@@ -27,7 +27,6 @@ public class ClientHandler implements Runnable {
             out.println("331 User name ok, need password");
             String login = in.readLine().trim();
             System.out.println(login);
-            System.in.read();
 
             // Demander le mot de passe
             out.println("331 Enter password");
@@ -77,6 +76,7 @@ public class ClientHandler implements Runnable {
             clientSocket.close();
 
         } catch (IOException e) {
+            System.err.println("Erreur : " + e);
             e.printStackTrace();
         }
     }

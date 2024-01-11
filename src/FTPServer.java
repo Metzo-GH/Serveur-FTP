@@ -4,21 +4,22 @@ import java.net.Socket;
 
 public class FTPServer {
     public static void main(String[] args) {
-        int portNumber = 2121; // Port FTP standard
+        int portNumber = 2121;
 
-        try (ServerSocket serverSocket = new ServerSocket(portNumber)) {
-            System.out.println("Serveur FTP en attente de connexions sur le port " + portNumber);
+        try (
+            ServerSocket serverSocket = new ServerSocket(portNumber)) {
+            System.out.println("Attente connexion sur " + portNumber);
 
             while (true) {
-                Socket clientSocket = serverSocket.accept();
-                System.out.println("Nouvelle connexion cliente.");
+                Socket socket = serverSocket.accept();
+                System.out.println("Connecté.");
 
-                // Créer un gestionnaire de client dans un nouveau thread
-                Thread clientHandler = new Thread(new ClientHandler(clientSocket));
+                // Thread
+                Thread clientHandler = new Thread(new ClientHandler(socket));
                 clientHandler.start();
             }
         } catch (IOException e) {
-            System.err.println("Erreur lors de la création du serveur sur le port " + portNumber);
+            System.err.println("Erreur : " + e);
             e.printStackTrace();
         }
     }
