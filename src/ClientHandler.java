@@ -3,13 +3,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.Scanner;
 
 public class ClientHandler implements Runnable {
     private Socket clientSocket;
     private BufferedReader in;
     private PrintWriter out;
-    private Scanner scanner;
 
     public ClientHandler(Socket socket) {
         this.clientSocket = socket;
@@ -28,11 +26,13 @@ public class ClientHandler implements Runnable {
             // Demander le nom d'utilisateur
             out.println("331 User name ok, need password");
             String login = in.readLine().trim();
+            System.out.println(login);
+            System.in.read();
 
-            // Utiliser Scanner pour lire le mot de passe
-            scanner = new Scanner(System.in);
-            out.println("331 Enter password: ");
-            String password = scanner.nextLine().trim();
+            // Demander le mot de passe
+            out.println("331 Enter password");
+            String password = in.readLine().trim();
+            System.out.println(password);
 
             // Vérifier les informations d'identification
             if (isValidUser(login, password)) {
@@ -51,7 +51,7 @@ public class ClientHandler implements Runnable {
                 // Implémenter la logique pour les commandes FTP
                 switch (clientCommand.toLowerCase()) {
                     case "quit":
-                        out.println("221 Déconnexion.");
+                        System.out.println("221 Déconnexion.");
                         break;
                     case "get":
                         // Ajoutez ici la logique pour la commande 'get'
@@ -78,15 +78,11 @@ public class ClientHandler implements Runnable {
 
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            if (scanner != null) {
-                scanner.close();
-            }
         }
     }
 
     private boolean isValidUser(String login, String password) {
         // Vérifier les informations d'identification ici (à remplacer par une logique réelle)
-        return login.equals("utilisateur") && password.equals("motdepasse");
+        return login.equals("USER metzo") && password.equals("PASS a");
     }
 }
