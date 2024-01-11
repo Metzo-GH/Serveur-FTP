@@ -19,6 +19,9 @@ public class ClientHandler implements Runnable {
             // Flux de lecture et écriture pour communiquer avec le client
             in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             out = new PrintWriter(clientSocket.getOutputStream(), true);
+            
+            // Envoyer le message "220 Service ready" une fois la connexion établie
+            out.println("220 Service ready");
 
             // Votre code pour l'authentification et la gestion des commandes FTP ira ici
 
