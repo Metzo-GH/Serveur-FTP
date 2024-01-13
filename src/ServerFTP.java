@@ -7,7 +7,9 @@ public class ServerFTP {
 
     public static void main(String[] args) {
 
-        try (ServerSocket serverSocket = new ServerSocket(2121)) {
+        try {
+
+            ServerSocket serverSocket = new ServerSocket(2121);
             System.out.println("Attente de connexion sur le port 2121 ...");
             Socket socket = serverSocket.accept();
 
@@ -64,6 +66,7 @@ public class ServerFTP {
             in.close();
             out.close();
             socket.close();
+            serverSocket.close();
 
         } catch (IOException e) {
             System.err.println("Erreur : " + e);
