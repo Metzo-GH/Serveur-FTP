@@ -18,10 +18,11 @@ public class ServerFTP {
             InputStream in = socket.getInputStream();
             Scanner scanner = new Scanner(in);
             OutputStream out = socket.getOutputStream();
-
+            
             out.write("220 Service ready\r\n".getBytes());
             
             String username = scanner.nextLine().trim();
+            
             out.write("331 User name ok, need password".getBytes());
             username+="\r\n";
             out.write(username.getBytes());
@@ -31,11 +32,12 @@ public class ServerFTP {
             password+="\r\n";
             out.write(password.getBytes());
             
-            if (isValidUser(username, password)) {
+            if (userAuth(username, password)) {
                 out.write("230 User logged in\r\n".getBytes());
             } else {
                 out.write("530 Login incorrect\r\n".getBytes());
                 scanner.close();
+                serverSocket.close();
                 return;
             }
             
@@ -75,7 +77,7 @@ public class ServerFTP {
     }
 
 
-    private static boolean isValidUser(String username, String password) {
+    private static boolean userAuth(String username, String password) {
         return username.equals("metzo") && password.equals("a");
     }
 }
