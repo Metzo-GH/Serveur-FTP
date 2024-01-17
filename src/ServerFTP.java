@@ -52,9 +52,8 @@ public class ServerFTP {
                 
                 String clientCommand;
                 do {
-                    clientCommand = scanner.nextLine();
-                
-                    switch (clientCommand) {
+                    clientCommand = scanner.nextLine();             
+                    switch (clientCommand.toLowerCase()) {
                         case "quit":
                             out.write("221 Disconnected.\r\n".getBytes());
                             closeCon(scanner, in, out, socket,serverSocket);
@@ -86,11 +85,12 @@ public class ServerFTP {
         return username.equals("USER metzo") && password.equals("PASS ap");
     }
 
+
     private static void closeCon(Scanner scanner, InputStream in, OutputStream out, Socket socket, ServerSocket serverSocket) throws IOException {
         scanner.close();
         in.close();
         out.close();
-        socket.close();
         serverSocket.close();
+        socket.close();
     }
 }
