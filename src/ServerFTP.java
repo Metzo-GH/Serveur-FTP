@@ -21,36 +21,34 @@ public class ServerFTP {
             
             out.write("220 Service ready\r\n".getBytes());
             
-            String username = scanner.nextLine().trim();
+            String username = scanner.nextLine();
+            out.write("331 User name ok, need password\r\n".getBytes());
+            String password = scanner.nextLine();
+
+            System.out.println(username);
+            System.out.println(password);
             
-            out.write("331 User name ok, need password".getBytes());
-            username+="\r\n";
-            out.write(username.getBytes());
-            
-            String password = scanner.nextLine().trim();
-            out.write("331 Enter password\r\n".getBytes());
-            password+="\r\n";
-            out.write(password.getBytes());
-            
+
             if (userAuth(username, password)) {
                 out.write("230 User logged in\r\n".getBytes());
             } else {
                 out.write("530 Login incorrect\r\n".getBytes());
-                scanner.close();
-                serverSocket.close();
+                closeCon(scanner, in, out, socket,serverSocket);
                 return;
             }
+
             
             String clientCommand;
             do {
                 clientCommand = scanner.nextLine();
             
-                switch (clientCommand.toLowerCase()) {
+                switch (clientCommand) {
                     case "quit":
-                        System.out.println("221 Déconnexion.\r\n");
+                        out.write("221 Déconnexion.\r\n".getBytes());
+                        closeCon(scanner, in, out, socket,serverSocket);
                         break;
                     case "get":
-            
+                    
                         break;
                     case "dir":
             
@@ -63,12 +61,6 @@ public class ServerFTP {
                 }
             
             } while (!clientCommand.equalsIgnoreCase("quit"));
-            
-            scanner.close();
-            in.close();
-            out.close();
-            socket.close();
-            serverSocket.close();
 
         } catch (IOException e) {
             System.err.println("Erreur : " + e);
@@ -78,6 +70,14 @@ public class ServerFTP {
 
 
     private static boolean userAuth(String username, String password) {
-        return username.equals("metzo") && password.equals("a");
+        return username.equals("USER metzo") && password.equals("PASS ap");
+    }
+
+    private static void closeCon(Scanner scanner, InputStream in, OutputStream out, Socket socket, ServerSocket serverSocket) throws IOException {
+        scanner.close();
+        in.close();
+        out.close();
+        socket.close();
+        serverSocket.close();
     }
 }
