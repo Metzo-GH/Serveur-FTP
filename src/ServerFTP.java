@@ -45,18 +45,19 @@ public class ServerFTP {
                     out.write("230 User logged in\r\n".getBytes());
                 } else {
                     out.write("530 Login incorrect\r\n".getBytes());
-                    closeCon(scanner, in, out, socket, serverSocket);
+                    closeCon(scanner, in, out, socket);
                     return;
                 }
 
                 
                 String clientCommand;
                 do {
-                    clientCommand = scanner.nextLine();             
+                    clientCommand = scanner.nextLine();
+                    System.out.println(clientCommand);          
                     switch (clientCommand.toLowerCase()) {
                         case "quit":
                             out.write("221 Disconnected.\r\n".getBytes());
-                            closeCon(scanner, in, out, socket,serverSocket);
+                            closeCon(scanner, in, out, socket);
                             break;
                         case "get":
                             String fileName = scanner.nextLine();
@@ -87,11 +88,10 @@ public class ServerFTP {
     }
 
 
-    private static void closeCon(Scanner scanner, InputStream in, OutputStream out, Socket socket, ServerSocket serverSocket) throws IOException {
+    private static void closeCon(Scanner scanner, InputStream in, OutputStream out, Socket socket) throws IOException {
         scanner.close();
         in.close();
         out.close();
-        serverSocket.close();
         socket.close();
     }
 
@@ -131,4 +131,5 @@ public class ServerFTP {
             System.err.println("Error: " + e.getMessage());
         }
     }
+    
 }
