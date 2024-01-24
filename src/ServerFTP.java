@@ -6,15 +6,13 @@ import java.util.Scanner;
 public class ServerFTP {
 
     public static void main(String[] args) {
-
         try {
-
             ServerSocket serverSocket = new ServerSocket(2121);
             System.out.println("Attente de connexion sur le port 2121 ...");
 
             while (true) {
                 Socket socket = serverSocket.accept();
-                clientThread ct = new clientThread(socket, serverSocket);
+                clientThread ct = new clientThread(socket);
                 ct.start();
             }
 
@@ -25,21 +23,24 @@ public class ServerFTP {
     }
 
     private static class clientThread extends Thread {
-        public clientThread(Socket socket, ServerSocket serverSocket) {
+        private Socket socket;
+        private ServerSocket dataServerSocket;
+
+
+        public clientThread(Socket socket) {
             System.out.println("Client connecté.");
-            try ( InputStream in = socket.getInputStream();
-            Scanner scanner = new Scanner(in);
-            OutputStream out = socket.getOutputStream() ) {
-            
+            try (InputStream in = socket.getInputStream();
+                 Scanner scanner = new Scanner(in);
+                 OutputStream out = socket.getOutputStream()) {
+
                 out.write("220 Service ready\r\n".getBytes());
-                
+
                 String username = scanner.nextLine();
                 out.write("331 User name ok, need password\r\n".getBytes());
                 String password = scanner.nextLine();
 
                 System.out.println(username);
                 System.out.println(password);
-                
 
                 if (userAuth(username, password)) {
                     out.write("230 User logged in\r\n".getBytes());
@@ -49,87 +50,113 @@ public class ServerFTP {
                     return;
                 }
 
-                
                 String clientCommand;
                 do {
                     clientCommand = scanner.nextLine();
-                    System.out.println(clientCommand);          
-                    switch (clientCommand.toLowerCase()) {
-                        case "quit":
+                    System.out.println(clientCommand);
+                    String[] commandParts = clientCommand.split("\\s+", 2); // Divise la commande en parties, en limitant à 2 parties
+                    String command = commandParts[0].toUpperCase(); // Assurez-vous que la commande est en majuscules
+                    String fileName = commandParts.length > 1 ? commandParts[1] : "";
+                
+                    switch (command) {
+                        case "QUIT":
                             out.write("221 Disconnected.\r\n".getBytes());
                             closeCon(scanner, in, out, socket);
                             break;
-                        case "get":
-                            String fileName = scanner.nextLine();
-                            getFile(fileName, out);
+                        case "SYST":
+                            out.write("215 Remote system type is UNIX.\r\n".getBytes());
                             break;
-                        case "dir":
-                
+                        case "SIZE":
+                            fileSize(fileName, out);
                             break;
-                        case "cd":
-
+                        case "EPSV":
+                            fileEPSV(out);
+                            break;
+                        case "RETR":
+                            fileRetr(fileName, out);
                             break;
                         default:
                             out.write("500 Commande non reconnue\r\n".getBytes());
                     }
-                
-                } while (!clientCommand.equalsIgnoreCase("quit"));
+                } while (!clientCommand.equalsIgnoreCase("QUIT"));
 
             } catch (Exception e) {
                 System.err.println("Erreur : " + e);
                 e.printStackTrace();
+            } finally {
+                closeCon(null, null, null, socket);
             }
         }
-    }
 
+        private static boolean userAuth(String username, String password) {
+            return username.equals("USER metzo") && password.equals("PASS ap");
+        }
 
-    private static boolean userAuth(String username, String password) {
-        return username.equals("USER metzo") && password.equals("PASS ap");
-    }
+        private static void closeCon(Scanner scanner, InputStream in, OutputStream out, Socket socket) {
+            try {
+                if (scanner != null) scanner.close();
+                if (in != null) in.close();
+                if (out != null) out.close();
+                if (socket != null) socket.close();
+            } catch (IOException e) {
+                System.err.println("Erreur lors de la fermeture : " + e);
+            }
+        }
 
+        public static void fileSize(String fileName, OutputStream out) throws IOException {
+            File file = new File("storage/" + fileName);
+            long fileSize = file.length();
+            String mes = "213 " + fileSize + "\r\n";
+            out.write(mes.getBytes());
+        }
 
-    private static void closeCon(Scanner scanner, InputStream in, OutputStream out, Socket socket) throws IOException {
-        scanner.close();
-        in.close();
-        out.close();
-        socket.close();
-    }
-
-
-    private static void getFile(String fileName, OutputStream out) {
-        try {
-            File file = new File("storage/"+fileName);
-
-            if (!file.exists()) {
-                out.write("550 File not found!".getBytes());
-            } else {
-                out.write("200 PORT command successful".getBytes());
-                out.write(( "150 data connection for "+file.getName() ).getBytes());
-                FileInputStream fileInputStream = new FileInputStream(file);
-            
-                byte[] buffer = new byte[1024];
-                int byteRead;
-
-                try {
-                    while ((byteRead = fileInputStream.read(buffer, 0, 1024)) != -1) {
-                        out.write(buffer, 0, byteRead);
-                    }
-                } catch (Exception e) {
-                    System.err.println("Error : " + e);
-                    e.printStackTrace();
+        public void fileEPSV(OutputStream out) {
+            try {
+                if (dataServerSocket != null && !dataServerSocket.isClosed()) {
+                    dataServerSocket.close();
                 }
                 
-                fileInputStream.close();
-                out.write( ("Completed file transmission of "+file.getName()+"\r\n").getBytes() );
-                out.write( ("226 Transfer complete\r\n").getBytes() );
+                dataServerSocket = new ServerSocket(0);
+                int port = dataServerSocket.getLocalPort();
+        
+                String mes = "229 Entering Extended Passive Mode (|||" + port + "|)\r\n";
+                out.write(mes.getBytes());
+            } catch (Exception e) {
+                System.err.println("Error : " + e);
             }
-            
-
-        } catch (FileNotFoundException e) {
-            System.err.println("Error : " + e.getMessage());
-        } catch (IOException e) {
-            System.err.println("Error: " + e.getMessage());
         }
+        
+
+        public void fileRetr(String fileName, OutputStream out) throws IOException {
+            try {
+                File file = new File("storage/" + fileName);
+                System.out.println("The filename : "+fileName);
+        
+                if (!file.exists()) {
+                    out.write("550 File not found\r\n".getBytes());
+                    return;
+                }
+        
+                try (Socket dataSocket = dataServerSocket.accept();
+                     FileInputStream fileInputStream = new FileInputStream(file);
+                     OutputStream dataOut = dataSocket.getOutputStream()) {
+        
+                    byte[] buffer = new byte[1024];
+                    int bytesRead;
+        
+                    out.write(("150 Opening data connection for " + fileName + "\r\n").getBytes());
+        
+                    while ((bytesRead = fileInputStream.read(buffer)) != -1) {
+                        dataOut.write(buffer, 0, bytesRead);
+                    }
+        
+                    out.write("226 Transfer complete.\r\n".getBytes());
+                }
+        
+            } catch (IOException e) {
+                System.err.println("Error during RETR: " + e);
+            }
+        }
+        
     }
-    
 }
