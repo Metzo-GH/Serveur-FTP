@@ -74,6 +74,13 @@ public class ServerFTP {
                         case "RETR":
                             fileRetr(fileName, out);
                             break;
+                        case "LIST":
+                            fileDir(out);
+                            break;
+                        case "CWD":
+                        case "xCWD":
+                            fileCd(fileName, out);
+                            break;
                         default:
                             out.write("500 Commande non reconnue\r\n".getBytes());
                     }
@@ -122,7 +129,7 @@ public class ServerFTP {
         
 
         public void fileRetr(String fileName, OutputStream out) throws IOException {
-            
+
                 File file = new File("storage/" + fileName);
                 System.out.println("The filename : " + fileName);
         
@@ -147,8 +154,47 @@ public class ServerFTP {
                     }
         
                     out.write("226 Transfer complete.\r\n".getBytes());
+                    dataSocket.close();
+                    dataServerSocket.close();
                 }
-        }        
+        }
+        
+        public void fileDir(OutputStream out) throws IOException {
+            File directoryCurrent = new File("storage/");
+            File[] files = directoryCurrent.listFiles();
+        
+            if (files == null) {
+                out.write("550 Directory not found\r\n".getBytes());
+                return;
+            }
+        
+            out.write("150 Here comes the directory listing\r\n".getBytes());
+
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    out.write(("D " + file.getName() + "\r\n").getBytes());
+                } else if (file.isFile()) {
+                    out.write(("F " + file.getName() + "\r\n").getBytes());
+                }
+            }
+        
+            out.write("226 Directory send OK.\r\n".getBytes());
+        }
+
+        private void fileCd(String directoryName, OutputStream out) throws IOException {
+            File newDirectory = new File("storage/" + directoryName);
+        
+            if (newDirectory.exists() && newDirectory.isDirectory()) {
+                if (newDirectory.getAbsolutePath().startsWith(new File("storage/").getAbsolutePath())) {
+                    out.write("250 Directory changed successfully\r\n".getBytes());
+                } else {
+                    out.write("550 Permission denied\r\n".getBytes());
+                }
+            } else {
+                out.write("550 Directory not found\r\n".getBytes());
+            }
+        }
+        
 
     }
 }
