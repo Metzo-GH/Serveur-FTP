@@ -122,14 +122,16 @@ public class ServerFTP {
         
 
         public void fileRetr(String fileName, OutputStream out) throws IOException {
-            try {
+            
                 File file = new File("storage/" + fileName);
-                System.out.println("The filename : "+fileName);
+                System.out.println("The filename : " + fileName);
         
                 if (!file.exists()) {
                     out.write("550 File not found\r\n".getBytes());
                     return;
                 }
+        
+                long fileSize = file.length();
         
                 try (Socket dataSocket = dataServerSocket.accept();
                      FileInputStream fileInputStream = new FileInputStream(file);
@@ -138,7 +140,7 @@ public class ServerFTP {
                     byte[] buffer = new byte[1024];
                     int bytesRead;
         
-                    out.write(("150 Opening data connection for " + fileName + "\r\n").getBytes());
+                    out.write(("150 Opening data connection for " + fileName + " (" + fileSize + " bytes)\r\n").getBytes());
         
                     while ((bytesRead = fileInputStream.read(buffer)) != -1) {
                         dataOut.write(buffer, 0, bytesRead);
@@ -146,11 +148,7 @@ public class ServerFTP {
         
                     out.write("226 Transfer complete.\r\n".getBytes());
                 }
-        
-            } catch (IOException e) {
-                System.err.println("Error during RETR: " + e);
-            }
-        }
+        }        
 
     }
 }
