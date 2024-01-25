@@ -166,20 +166,21 @@ public class ServerFTP {
             if (files == null) {
                 out.write("550 Directory not found\r\n".getBytes());
                 return;
-            }
-        
-            out.write("150 Here comes the directory listing\r\n".getBytes());
+            } else {
+                out.write("150 Here comes the directory listing\r\n".getBytes());
 
-            for (File file : files) {
-                if (file.isDirectory()) {
-                    out.write(("D " + file.getName() + "\r\n").getBytes());
-                } else if (file.isFile()) {
-                    out.write(("F " + file.getName() + "\r\n").getBytes());
+                for (File file : files) {
+                    if (file.isDirectory()) {
+                        out.write(("D " + file.getName() + "\r\n").getBytes());
+                    } else if (file.isFile()) {
+                        out.write(("F " + file.getName() + "\r\n").getBytes());
+                    }
                 }
+                out.write("226 Directory send OK.\r\n".getBytes());
             }
-        
-            out.write("226 Directory send OK.\r\n".getBytes());
         }
+
+        
 
         private void fileCd(String directoryName, OutputStream out) throws IOException {
             File newDirectory = new File("storage/" + directoryName);
