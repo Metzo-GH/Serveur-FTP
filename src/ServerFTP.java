@@ -10,8 +10,7 @@ import java.util.Scanner;
 public class ServerFTP {
 
     public static void main(String[] args) {
-        try {
-            ServerSocket serverSocket = new ServerSocket(2121);
+        try (ServerSocket serverSocket = new ServerSocket(2121)){
             System.out.println("Attente de connexion sur le port 2121 ...");
 
             while (true) {
@@ -69,9 +68,6 @@ public class ServerFTP {
                         case "SYST":
                             out.write("215 Remote system type is UNIX.\r\n".getBytes());
                             break;
-                        case "SIZE":
-                            fileSize(fileName, out);
-                            break;
                         case "EPSV":
                             fileEPSV(out);
                             break;
@@ -106,12 +102,7 @@ public class ServerFTP {
             }
         }
 
-        public static void fileSize(String fileName, OutputStream out) throws IOException {
-            File file = new File("storage/" + fileName);
-            long fileSize = file.length();
-            String mes = "213 " + fileSize + "\r\n";
-            out.write(mes.getBytes());
-        }
+
 
         public void fileEPSV(OutputStream out) {
             try {
@@ -160,6 +151,6 @@ public class ServerFTP {
                 System.err.println("Error during RETR: " + e);
             }
         }
-        
+
     }
 }
