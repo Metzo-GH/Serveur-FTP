@@ -1,4 +1,8 @@
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Scanner;
@@ -23,7 +27,6 @@ public class ServerFTP {
     }
 
     private static class clientThread extends Thread {
-        private Socket socket;
         private ServerSocket dataServerSocket;
 
 
@@ -54,8 +57,8 @@ public class ServerFTP {
                 do {
                     clientCommand = scanner.nextLine();
                     System.out.println(clientCommand);
-                    String[] commandParts = clientCommand.split("\\s+", 2); // Divise la commande en parties, en limitant à 2 parties
-                    String command = commandParts[0].toUpperCase(); // Assurez-vous que la commande est en majuscules
+                    String[] commandParts = clientCommand.split("\\s+", 2);
+                    String command = commandParts[0].toUpperCase();
                     String fileName = commandParts.length > 1 ? commandParts[1] : "";
                 
                     switch (command) {
