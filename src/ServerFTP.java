@@ -78,7 +78,7 @@ public class ServerFTP {
                             fileDir(out);
                             break;
                         case "CWD":
-                        case "xCWD":
+                        case "XCWD":
                             fileCd(fileName, out);
                             break;
                         default:
