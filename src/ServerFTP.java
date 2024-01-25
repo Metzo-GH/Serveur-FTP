@@ -160,23 +160,28 @@ public class ServerFTP {
         }
         
         public void fileDir(OutputStream out) throws IOException {
-            File directoryCurrent = new File("storage/");
-            File[] files = directoryCurrent.listFiles();
-        
-            if (files == null) {
-                out.write("550 Directory not found\r\n".getBytes());
-                return;
-            } else {
-                out.write("150 Here comes the directory listing\r\n".getBytes());
+            try (Socket dataSocket = dataServerSocket.accept();
+            OutputStream dataOut = dataSocket.getOutputStream()) {
 
-                for (File file : files) {
-                    if (file.isDirectory()) {
-                        out.write(("D " + file.getName() + "\r\n").getBytes());
-                    } else if (file.isFile()) {
-                        out.write(("F " + file.getName() + "\r\n").getBytes());
+                File directoryCurrent = new File("storage/");
+                File[] files = directoryCurrent.listFiles();
+                
+                if (files == null) {
+                    out.write("550 Directory not found\r\n".getBytes());
+                    return;
+                } else {
+                    out.write("150 Here comes the directory listing\r\n".getBytes());
+
+                    for (File file : files) {
+                        if (file.isDirectory()) {
+                            dataOut.write(("D " + file.getName() + "\r\n").getBytes());
+                        } else if (file.isFile()) {
+                            dataOut.write(("F " + file.getName() + "\r\n").getBytes());
+                        }
                     }
+                    out.write("226 Directory send OK.\r\n".getBytes());
                 }
-                out.write("226 Directory send OK.\r\n".getBytes());
+        
             }
         }
 
