@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Paths;
 import java.util.Scanner;
 
 public class ServerFTP {
@@ -27,7 +28,7 @@ public class ServerFTP {
 
     private static class clientThread extends Thread {
         private ServerSocket dataServerSocket;
-
+        private String currentPath = "storage/";
 
         public clientThread(Socket socket) {
             System.out.println("Client connecté.");
@@ -64,9 +65,6 @@ public class ServerFTP {
                         case "QUIT":
                             out.write("221 Disconnected.\r\n".getBytes());
                             closeCon(scanner, in, out, socket);
-                            break;
-                        case "SYST":
-                            out.write("215 Remote system type is UNIX.\r\n".getBytes());
                             break;
                         case "EPSV":
                             fileEPSV(out);
@@ -130,7 +128,7 @@ public class ServerFTP {
 
         public void fileRetr(String fileName, OutputStream out) throws IOException {
 
-                File file = new File("storage/" + fileName);
+                File file = new File(currentPath + fileName);
                 System.out.println("The filename : " + fileName);
         
                 if (!file.exists()) {
@@ -163,7 +161,7 @@ public class ServerFTP {
             try (Socket dataSocket = dataServerSocket.accept();
             OutputStream dataOut = dataSocket.getOutputStream()) {
 
-                File directoryCurrent = new File("storage/");
+                File directoryCurrent = new File(currentPath);
                 File[] files = directoryCurrent.listFiles();
                 
                 if (files == null) {
@@ -188,19 +186,29 @@ public class ServerFTP {
         
 
         private void fileCd(String directoryName, OutputStream out) throws IOException {
-            File newDirectory = new File("storage/" + directoryName);
+            File newDirectory = new File(currentPath + directoryName);
+            File defaultDirectory = new File("storage/");
+            String parentPath = defaultDirectory.getAbsoluteFile().getParent();
+            File authorizedDirectory = new File(parentPath);
+
+            String authorizedPath = authorizedDirectory.getAbsolutePath() + File.separator;
+
+
+            System.out.println(authorizedPath);
+            System.out.println(currentPath);
         
             if (newDirectory.exists() && newDirectory.isDirectory()) {
-                if (newDirectory.getAbsolutePath().startsWith(new File("storage/").getAbsolutePath())) {
-                    out.write("250 Directory changed successfully\r\n".getBytes());
+                if (currentPath.equals(authorizedPath)) {
+                    out.write("550 Directory not allowed, Redirected to the authorized path\r\n".getBytes());
+                    currentPath = authorizedPath + File.separator + "storage" + File.separator;
                 } else {
-                    out.write("550 Permission denied\r\n".getBytes());
+                    out.write("250 Directory changed successfully\r\n".getBytes());
+                    currentPath = Paths.get(newDirectory.getAbsolutePath()).normalize() + File.separator;
                 }
             } else {
                 out.write("550 Directory not found\r\n".getBytes());
             }
         }
         
-
     }
 }
