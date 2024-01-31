@@ -93,7 +93,7 @@ public class ServerFTP {
         }
 
         private static boolean userAuth(String username, String password) {
-            return username.equals("USER metzo") && password.equals("PASS ap");
+            return username.equals("USER metzo") && password.equals("PASS gh");
         }
 
         private static void closeCon(Scanner scanner, InputStream in, OutputStream out, Socket socket) {
