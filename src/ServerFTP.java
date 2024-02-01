@@ -89,7 +89,6 @@ public class ServerFTP {
                             String[] messageParts = fileName.split("\\s+", 2);
                             String file = messageParts[0];
                             Integer line = messageParts.length > 1 ? Integer.parseInt(messageParts[1]) : null;
-                            fileEPSV(out);
                             fileLine(file, line, out);
                             break;
                         default:
@@ -166,8 +165,6 @@ public class ServerFTP {
                 }
 
                 out.write("226 Transfer complete.\r\n".getBytes());
-                dataSocket.close();
-                dataServerSocket.close();
             }
         }
 
@@ -222,32 +219,28 @@ public class ServerFTP {
         }
 
         public void fileLine(String theFile, int lineNumber, OutputStream out) throws IOException {
-
             File file = new File(currentPath + theFile);
-
+        
             if (!file.exists()) {
                 out.write("550 File not found\r\n".getBytes());
                 return;
             }
-
-            try (Socket dataSocket = dataServerSocket.accept();
-                FileInputStream fileInputStream = new FileInputStream(file);
-                OutputStream dataOut = dataSocket.getOutputStream()) {
-
+        
+            try (FileInputStream fileInputStream = new FileInputStream(file);
+                 Scanner scanner = new Scanner(fileInputStream)) {
+        
                 StringBuilder content = new StringBuilder();
                 int currentLineNumber = 0;
-
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(fileInputStream))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        currentLineNumber++;
-                        if (currentLineNumber == lineNumber) {
-                            content.append(line);
-                            break;
-                        }
+        
+                while (scanner.hasNextLine()) {
+                    String line = scanner.nextLine();
+                    currentLineNumber++;
+                    if (currentLineNumber == lineNumber) {
+                        content.append(line);
+                        break;
                     }
                 }
-
+        
                 if (content.length() > 0) {
                     out.write(("250 Line " + lineNumber + ": " + content.toString() + "\r\n").getBytes());
                 } else {
@@ -255,6 +248,8 @@ public class ServerFTP {
                 }
             }
         }
+        
+        
 
     }
 }
