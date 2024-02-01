@@ -11,7 +11,7 @@ import java.util.Scanner;
 public class ServerFTP {
 
     public static void main(String[] args) {
-        try (ServerSocket serverSocket = new ServerSocket(2121)){
+        try (ServerSocket serverSocket = new ServerSocket(2121)) {
             System.out.println("Attente de connexion sur le port 2121 ...");
 
             while (true) {
@@ -33,8 +33,8 @@ public class ServerFTP {
         public clientThread(Socket socket) {
             System.out.println("Client connecté.");
             try (InputStream in = socket.getInputStream();
-                 Scanner scanner = new Scanner(in);
-                 OutputStream out = socket.getOutputStream()) {
+                    Scanner scanner = new Scanner(in);
+                    OutputStream out = socket.getOutputStream()) {
 
                 out.write("220 Service ready\r\n".getBytes());
 
@@ -60,10 +60,10 @@ public class ServerFTP {
                     String[] commandParts = clientCommand.split("\\s+", 2);
                     String command = commandParts[0].toUpperCase();
                     String fileName = commandParts.length > 1 ? commandParts[1] : "";
-                
+
                     switch (command) {
                         case "QUIT":
-                            out.write("221 Disconnected.\r\n".getBytes());
+                            out.write(("221 " + username + " Disconnected.\r\n").getBytes());
                             closeCon(scanner, in, out, socket);
                             break;
                         case "EPSV":
@@ -79,6 +79,10 @@ public class ServerFTP {
                         case "XCWD":
                             fileCd(fileName, out);
                             break;
+                        case "PING":
+                            out.write("200 PING command ok\r\n".getBytes());
+                            out.write("PONG".getBytes());
+                            break;
                         default:
                             out.write("500 Commande non reconnue\r\n".getBytes());
                     }
@@ -93,77 +97,78 @@ public class ServerFTP {
         }
 
         private static boolean userAuth(String username, String password) {
-            return username.equals("USER metzo") && password.equals("PASS gh");
+            return username.equals("USER miage") && password.equals("PASS car");
         }
 
         private static void closeCon(Scanner scanner, InputStream in, OutputStream out, Socket socket) {
             try {
-                if (scanner != null) scanner.close();
-                if (in != null) in.close();
-                if (out != null) out.close();
-                if (socket != null) socket.close();
+                if (scanner != null)
+                    scanner.close();
+                if (in != null)
+                    in.close();
+                if (out != null)
+                    out.close();
+                if (socket != null)
+                    socket.close();
             } catch (IOException e) {
                 System.err.println("Erreur lors de la fermeture : " + e);
             }
         }
-
-
 
         public void fileEPSV(OutputStream out) {
             try {
                 if (dataServerSocket != null && !dataServerSocket.isClosed()) {
                     dataServerSocket.close();
                 }
-                
+
                 dataServerSocket = new ServerSocket(0);
                 int port = dataServerSocket.getLocalPort();
-        
+
                 String mes = "229 Entering Extended Passive Mode (|||" + port + "|)\r\n";
                 out.write(mes.getBytes());
             } catch (Exception e) {
                 System.err.println("Error : " + e);
             }
         }
-        
 
         public void fileRetr(String fileName, OutputStream out) throws IOException {
 
-                File file = new File(currentPath + fileName);
-                System.out.println("The filename : " + fileName);
-        
-                if (!file.exists()) {
-                    out.write("550 File not found\r\n".getBytes());
-                    return;
+            File file = new File(currentPath + fileName);
+            System.out.println("The filename : " + fileName);
+
+            if (!file.exists()) {
+                out.write("550 File not found\r\n".getBytes());
+                return;
+            }
+
+            long fileSize = file.length();
+
+            try (Socket dataSocket = dataServerSocket.accept();
+                    FileInputStream fileInputStream = new FileInputStream(file);
+                    OutputStream dataOut = dataSocket.getOutputStream()) {
+
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+
+                out.write(("150 Opening data connection for " + fileName + " (" + fileSize + " bytes)\r\n").getBytes());
+
+                while ((bytesRead = fileInputStream.read(buffer)) != -1) {
+                    dataOut.write(buffer, 0, bytesRead);
                 }
-        
-                long fileSize = file.length();
-        
-                try (Socket dataSocket = dataServerSocket.accept();
-                     FileInputStream fileInputStream = new FileInputStream(file);
-                     OutputStream dataOut = dataSocket.getOutputStream()) {
-        
-                    byte[] buffer = new byte[1024];
-                    int bytesRead;
-        
-                    out.write(("150 Opening data connection for " + fileName + " (" + fileSize + " bytes)\r\n").getBytes());
-        
-                    while ((bytesRead = fileInputStream.read(buffer)) != -1) {
-                        dataOut.write(buffer, 0, bytesRead);
-                    }
-        
-                    out.write("226 Transfer complete.\r\n".getBytes());
-                    dataSocket.close();
-                    dataServerSocket.close();
-                }
+
+                out.write("226 Transfer complete.\r\n".getBytes());
+                dataSocket.close();
+                dataServerSocket.close();
+            }
         }
-        
+
         public void fileDir(OutputStream out) throws IOException {
             try (Socket dataSocket = dataServerSocket.accept();
-            OutputStream dataOut = dataSocket.getOutputStream()) {
+                    OutputStream dataOut = dataSocket.getOutputStream()) {
 
                 File directoryCurrent = new File(currentPath);
                 File[] files = directoryCurrent.listFiles();
-                
+
                 if (files == null) {
                     out.write("550 Directory not found\r\n".getBytes());
                     return;
@@ -179,11 +184,9 @@ public class ServerFTP {
                     }
                     out.write("226 Directory send OK.\r\n".getBytes());
                 }
-        
+
             }
         }
-
-        
 
         private void fileCd(String directoryName, OutputStream out) throws IOException {
             File newDirectory = new File(currentPath + directoryName);
@@ -193,10 +196,9 @@ public class ServerFTP {
 
             String authorizedPath = authorizedDirectory.getAbsolutePath() + File.separator;
 
-
             System.out.println(authorizedPath);
             System.out.println(currentPath);
-        
+
             if (newDirectory.exists() && newDirectory.isDirectory()) {
                 if (currentPath.equals(authorizedPath)) {
                     out.write("550 Directory not allowed, Redirected to the authorized path\r\n".getBytes());
@@ -209,6 +211,6 @@ public class ServerFTP {
                 out.write("550 Directory not found\r\n".getBytes());
             }
         }
-        
+
     }
 }
