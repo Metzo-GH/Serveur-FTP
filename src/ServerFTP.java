@@ -1,7 +1,9 @@
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -82,6 +84,13 @@ public class ServerFTP {
                         case "PING":
                             out.write("200 PING command ok\r\n".getBytes());
                             out.write("PONG".getBytes());
+                            break;
+                        case "LINE":
+                            String[] messageParts = fileName.split("\\s+", 2);
+                            String file = messageParts[0];
+                            Integer line = messageParts.length > 1 ? Integer.parseInt(messageParts[1]) : null;
+                            fileEPSV(out);
+                            fileLine(file, line, out);
                             break;
                         default:
                             out.write("500 Commande non reconnue\r\n".getBytes());
@@ -209,6 +218,41 @@ public class ServerFTP {
                 }
             } else {
                 out.write("550 Directory not found\r\n".getBytes());
+            }
+        }
+
+        public void fileLine(String theFile, int lineNumber, OutputStream out) throws IOException {
+
+            File file = new File(currentPath + theFile);
+
+            if (!file.exists()) {
+                out.write("550 File not found\r\n".getBytes());
+                return;
+            }
+
+            try (Socket dataSocket = dataServerSocket.accept();
+                FileInputStream fileInputStream = new FileInputStream(file);
+                OutputStream dataOut = dataSocket.getOutputStream()) {
+
+                StringBuilder content = new StringBuilder();
+                int currentLineNumber = 0;
+
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(fileInputStream))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        currentLineNumber++;
+                        if (currentLineNumber == lineNumber) {
+                            content.append(line);
+                            break;
+                        }
+                    }
+                }
+
+                if (content.length() > 0) {
+                    out.write(("250 Line " + lineNumber + ": " + content.toString() + "\r\n").getBytes());
+                } else {
+                    out.write(("550 Line " + lineNumber + " not found\r\n").getBytes());
+                }
             }
         }
 

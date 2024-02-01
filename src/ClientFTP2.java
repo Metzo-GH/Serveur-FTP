@@ -4,7 +4,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.util.Scanner;
 
-public class ClientFTP {
+public class ClientFTP2 {
 
     public static void main(String[] args) {
 
