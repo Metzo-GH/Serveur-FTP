@@ -220,18 +220,18 @@ public class ServerFTP {
 
         public void fileLine(String theFile, int lineNumber, OutputStream out) throws IOException {
             File file = new File(currentPath + theFile);
-        
+
             if (!file.exists()) {
                 out.write("550 File not found\r\n".getBytes());
                 return;
             }
-        
+
             try (FileInputStream fileInputStream = new FileInputStream(file);
-                 Scanner scanner = new Scanner(fileInputStream)) {
-        
+                    Scanner scanner = new Scanner(fileInputStream)) {
+
                 StringBuilder content = new StringBuilder();
                 int currentLineNumber = 0;
-        
+
                 while (scanner.hasNextLine()) {
                     String line = scanner.nextLine();
                     currentLineNumber++;
@@ -240,7 +240,7 @@ public class ServerFTP {
                         break;
                     }
                 }
-        
+
                 if (content.length() > 0) {
                     out.write(("250 Line " + lineNumber + ": " + content.toString() + "\r\n").getBytes());
                 } else {
@@ -248,8 +248,6 @@ public class ServerFTP {
                 }
             }
         }
-        
-        
 
     }
 }

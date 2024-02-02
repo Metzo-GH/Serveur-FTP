@@ -24,7 +24,7 @@ public class ClientFTP3 {
             response = scanner.nextLine();
             System.out.println("Server response: " + response);
             out.write("line hello.txt 25\r\n".getBytes());
-            
+
             response = scanner.nextLine();
             System.out.println("Server response: " + response);
 
